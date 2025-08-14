@@ -1,19 +1,24 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:todo_evently/Provider/themeProvider.dart';
 import "dart:ui" as ui;
 
-class OnboardingScreen extends StatefulWidget {
+import 'package:todo_evently/Screens/login_screen.dart';
+
+class IntroductionScreen extends StatefulWidget {
   static const String routeName="/";
-  const OnboardingScreen({super.key});
+  const IntroductionScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  State<IntroductionScreen> createState() => _IntroductionScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _IntroductionScreenState extends State<IntroductionScreen> {
   @override
   Widget build(BuildContext context) {
+    var provider=Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Image(image: AssetImage("assets/images/evently_header_onboarding.png")),
@@ -174,13 +179,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           InkWell(
-                            onTap: () {},
+                            onTap: () {
+                              provider.changeTheme(ThemeMode.light);
+                            },
                             borderRadius: BorderRadius.circular(100),
                             child: Container(
                               decoration: BoxDecoration(
+                                color: (provider.themeMode==ThemeMode.light) ?  Color(0XFF5669FF) :Colors.transparent,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Color(0XFF5669FF),
+                                  style: (provider.themeMode==ThemeMode.light) ? BorderStyle.solid : BorderStyle.none,
                                   width: 3,
                                 ),
                               ),
@@ -188,18 +197,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 child: Image.asset(
                                   "assets/images/Sun.png",
                                   fit: BoxFit.cover,
+                                  color: (provider.themeMode==ThemeMode.light) ? Color(0XFFF2FEFF) : Color(0XFF5669FF),
                                 ),
                               ),
                             ),
                           ),
                           InkWell(
-                            onTap: () {},
+                            onTap: () {
+                              provider.changeTheme(ThemeMode.dark);
+                            },
                             borderRadius: BorderRadius.circular(100),
                             child: Container(
                               decoration: BoxDecoration(
+                                color: (provider.themeMode==ThemeMode.dark) ?  Color(0XFF5669FF) : Colors.transparent,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Color(0XFF5669FF),
+                                  style: (provider.themeMode==ThemeMode.dark) ? BorderStyle.solid : BorderStyle.none,
                                   width: 3,
                                 ),
                               ),
@@ -207,8 +221,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 child: Image.asset(
                                   "assets/images/Moon.png",
                                   fit: BoxFit.cover,
-                                  width: 22,
-                                  height: 22,
+                                  color: (provider.themeMode==ThemeMode.dark) ? Color(0XFFF2FEFF) : Color(0XFF5669FF),
                                 ),
                               ),
                             ),
@@ -221,7 +234,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               SizedBox(height: 10,),
               ElevatedButton(
-                  onPressed: (){},
+                  onPressed: (){
+                    Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+                  },
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0XFF5669FF)
                   ),
