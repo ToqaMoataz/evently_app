@@ -1,32 +1,23 @@
 class UserModel {
-  late String id;
-  final String name;
-  final String email;
-  final String phoneNumber;
+  String id;
+  String username;
+  String email;
+  String phone;
 
-  UserModel({
-    this.id="",
-    required this.name,
-    required this.email,
-    required this.phoneNumber,
-  });
+  UserModel(this.id, this.username, this.email, this.phone);
 
-  /// Convert Firestore JSON → UserModel
-  static UserModel fromJson(Map<String, dynamic> json, {String id = ""}) {
-    return UserModel(
-      id: id,
-      name: json['name'],
-      email: json['email'],
-      phoneNumber: json['phoneNumber'] as String,
-    );
-  }
+  UserModel.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        username = json['username'],
+        email = json['email'],
+        phone = json['phone'];
 
-  /// Convert UserModel → Firestore JSON
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
+      'id': id,
+      'username': username,
       'email': email,
-      'phoneNumber': phoneNumber,
+      'phone': phone,
     };
   }
 }

@@ -1,79 +1,151 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:todo_evently/Models/event_model.dart';
+import 'package:todo_c15_str/models/task_model.dart';
+import 'package:todo_c15_str/models/user_model.dart';
 
-import '../Models/user_model.dart';
-
-class FirebaseManager{
-
-  static  CollectionReference<UserModel> usersCollection() {
-    return FirebaseFirestore.instance.collection("Users").withConverter(
-        fromFirestore: (snapshot, _) {
-          return UserModel.fromJson(snapshot.data()!);
-        },
-        toFirestore: (model, _) {
-          return model.toJson();
-        }
-    );
-  }
-  static  CollectionReference<EventModel> eventsCollection(){
-     return FirebaseFirestore.instance.collection("Events").withConverter(
-         fromFirestore: (snapshot,_){
-           return EventModel.fromJson(snapshot.data()!);
-         },
-         toFirestore: (model,_){
-           return model.toJson();
-         }
-     );
+class FirebaseManager {
+  static CollectionReference<UserModel> getUsersCollection() {
+    return FirebaseFirestore.instance
+        .collection("Users")
+        .withConverter<UserModel>(
+          fromFirestore: (snapshot, _) {
+            return UserModel.fromJson(snapshot.data()!);
+          },
+          toFirestore: (model, _) {
+            return model.toJson();
+          },
+        );
   }
 
-  static Future<void> addEvent(EventModel event) async{
-    var snapshot=eventsCollection().doc();
-    event.id=snapshot.id;
-    await snapshot.set(event);
+  static CollectionReference<TaskModel> getTasksCollection() {
+    return FirebaseFirestore.instance
+        .collection("Tasks")
+        .withConverter<TaskModel>(
+          fromFirestore: (snapshot, _) {
+            return TaskModel.fromJson(snapshot.data()!);
+          },
+          toFirestore: (model, _) {
+            return model.toJson();
+          },
+        );
   }
 
-  static addUser(UserModel user) async{
-    //usersCollection().add(user);
-    var snapshot=usersCollection().doc();
-    user.id=snapshot.id;
-    await snapshot.set(user);
+  static Future<void> createEvent(TaskModel model) {
+    var docRef = getTasksCollection().doc();
+    model.id = docRef.id;
+    return docRef.set(model);
   }
-
-
-  static signup({required String email,required String password,required Function onFail,required Function onSucess}) async{
+  //Edit Event
+  static Future<void> editEvent(TaskModel model) async {
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      onSucess();
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        print('The password provided is too weak.');
-      } else if (e.code == 'email-already-in-use') {
-        print('The account already exists for that email.');
+      if (model.id == null || model.id!.isEmpty) {
+        throw Exception("Task ID is null or empty");
       }
-      onFail(e.code);
+      await getTasksCollection()
+          .doc(model.id)
+          .set(model);
+      print("Event edited successfully");
     } catch (e) {
-      print(e);
+      print("Failed to edit event: $e");
     }
   }
 
-  static signin({required String email,required String password,required Function onSucess}) async {
+  static Future<void> deleteEvent(String id) async {
+    try {
+      await getTasksCollection().doc(id).delete();
+      print("Event deleted successfully: $id");
+    } catch (e) {
+      print("Failed to delete event: $e");
+    }
+  }
+
+  static Stream<QuerySnapshot<TaskModel>> getTasks(String category) {
+    if (category == "All") {
+      return getTasksCollection()
+          .where("userId", isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+          .orderBy("date")
+          .snapshots();
+    }
+    return getTasksCollection()
+        .where("userId", isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+        .where("category", isEqualTo: category)
+        .orderBy("date")
+        .snapshots();
+  }
+
+
+
+  static createAccount(UserModel user) {
+    var docRef = getUsersCollection().doc(user.id);
+    docRef.set(user);
+  }
+
+  static Future<UserModel?> readUser() async {
+    DocumentSnapshot<UserModel> docRef = await getUsersCollection()
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get();
+    return docRef.data();
+  }
+
+  static login(
+    String emailAddress,
+    String password,
+    Function onSuccess,
+    Function onError,
+  ) async {
     try {
       final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password
+        email: emailAddress,
+        password: password,
       );
-      onSucess();
+      // if (credential.user_model!.emailVerified) {
+
+      onSuccess();
+      // } else {
+      //   onError("Please verify your mail , and try again");
+      // }
     } on FirebaseAuthException catch (e) {
+      onError(e.message);
+
       if (e.code == 'user-not-found') {
         print('No user found for that email.');
       } else if (e.code == 'wrong-password') {
         print('Wrong password provided for that user.');
       }
+    }
+  }
+
+  static signUp(
+    String email,
+    String password,
+    String phone,
+    String userName,
+    Function onSuccess,
+    Function onError,
+  ) async {
+    try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      credential.user!.sendEmailVerification();
+      UserModel userModel = UserModel(
+        credential.user!.uid,
+        userName,
+        email,
+        phone,
+      );
+      createAccount(userModel);
+      onSuccess();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        onError('The password provided is too weak.');
+        print('The password provided is too weak.');
+      } else if (e.code == 'email-already-in-use') {
+        onError('The account already exists for that email.');
+        print('The account already exists for that email.');
+      }
+    } catch (e) {
+      print(e);
     }
   }
 }
